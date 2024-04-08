@@ -1,7 +1,10 @@
 import okhttp3.*;
+
+import org.json.JSONException;
 import org.json.JSONObject;
 import java.io.IOException;
 import java.util.Objects;
+import java.util.Scanner;
 
 
 public class Api_connector {
@@ -15,118 +18,161 @@ public class Api_connector {
         this.user_log = login;
         this.user_pass = pass;
 
-        if (testConnection()){
+//        boolean flag = testConnection();
+//        System.out.println("connection is " + flag);
+        if (true) {
             getAuthToken();
             getUserToken();
-            if (!checkUserToken()) {
-//            Log.i("ERRORINFO_USERTOKEN", "USER TOKEN DOESN'T EXIST");
-                System.out.println("USER TOKEN DOESN'T EXIST");
-            }
+        }else{
+//            Log.i("ERRORINFO_SERVER", "SERVER ISN'T RESPONDING");
+            System.out.println("SERVER ISN'T RESPONDING");
         }
     }
 
-    private boolean testConnection() {
-        String url = this.url + "system.auth";
-        Callb call = new Callb();
-        Request request = new Request.Builder().url(url).get().build();
-        this.client.newCall(request).enqueue(call);
-
-        return call.status;
-    }
-
-
     /*-------------- SERVER METHODS --------------*/
     private void getAuthToken() {
+        System.out.println("Ввкдите код подтверждения: ");
+        Scanner in = new Scanner(System.in);
+        String str = in.nextLine();
+        String secret_key = System.in.toString();
         String id_app = "2";
         String url = this.url + "system.auth?login=" + this.user_log
                 + "&password=" + this.user_pass
                 + "&id_app=" + id_app
                 + "&secret_key=" + this.secret_key;
-        System.out.println(url);
+        System.out.println("getAuthToken url: " + url);
 
         Callb call = new Callb();
-        Request request = new Request.Builder().url(url).get().build();
+        Request request = new Request.Builder()
+                .addHeader("User-Agent", "TiboxMobileApp")
+                .url(url).get().build();
+        System.out.println("request created");
         this.client.newCall(request).enqueue(call);
+        System.out.println("call created");
 
-        System.out.println(call.response);
-        JSONObject data = new JSONObject(call.response);
-        data = (JSONObject) data.get("response");
-        this.auth_token = data.getString("auth_token");
+        JSONObject data = new JSONObject();
+        System.out.println("data created");
+        try {
+            data = call.response;
+            this.auth_token = data.getString("auth_token");
+            System.out.println("auth_token: " + this.auth_token);
+        } catch (JSONException e) {
+//            Log.i("ERRORINFO_JSON", e.toString());
+            System.out.println("ERRORINFO_JSON: " + e.toString());
+        }
     }
 
     private void getUserToken() {
         String url = this.url + "system.getToken?auth_token=" + this.auth_token
                 + "&secret_key=" + this.secret_key;
+        System.out.println(url);
 
         Callb call = new Callb();
-        Request request = new Request.Builder().url(url).get().build();
+        Request request = new Request.Builder()
+                .addHeader("User-Agent", "TiboxMobileApp")
+                .url(url).get().build();
         this.client.newCall(request).enqueue(call);
 
-        JSONObject data = new JSONObject(call.response);
-        data = (JSONObject) data.get("response");
-        this.user_token = data.getString("user_token");
-
+        try {
+            JSONObject data = call.response;
+            this.user_token = data.getString("user_token");
+        } catch (JSONException e) {
+//            Log.i("ERRORINFO_JSON", e.toString());
+            System.out.println("ERRORINFO_JSON: " + e.toString());
+        }
     }
 
-    private boolean checkUserToken() {
-        String url = this.url + "system.ping?user_token=" + this.user_token;
+    private boolean testConnection(){
+        String url = this.url + "system.ping";
+        boolean status = false;
+        String resp = "";
 
         Callb call = new Callb();
-        Request request = new Request.Builder().url(url).get().build();
+        Request request = new Request.Builder()
+                .addHeader("User-Agent", "TiboxMobileApp")
+                .url(url).get().build();
         this.client.newCall(request).enqueue(call);
+        return status;
 
-        return call.status;
+//        System.out.println("response is " + call.response);
+//        System.out.println("response status is " + call.status);
+//        return call.status;
+//        Log.i("DEBUGINFO", call.response);
     }
-
 
     /*-------------- USER METHODS --------------*/
     public JSONObject getUserInfo() {
+        JSONObject obj = new JSONObject();
         String url = this.url + "user.getInfo?user_token=" + this.user_token;
 
         Callb call = new Callb();
-        Request request = new Request.Builder().url(url).get().build();
+        Request request = new Request.Builder()
+                .addHeader("User-Agent", "TiboxMobileApp")
+                .url(url).get().build();
         this.client.newCall(request).enqueue(call);
 
-        return new JSONObject(call.response);
+        try{
+            obj = call.response;
+        } catch (Exception e) {
+//            Log.i("ERRORINFO_JSON", e.toString());
+            System.out.println("ERRORINFO_JSON: " + e.toString());
+        }
+        return obj;
     }
 
     public JSONObject getUserGroup() {
         String url = this.url + "user.getGroup?user_token=" + this.user_token;
 
         Callb call = new Callb();
-        Request request = new Request.Builder().url(url).get().build();
+        Request request = new Request.Builder()
+                .addHeader("User-Agent", "TiboxMobileApp")
+                .url(url).get().build();
         this.client.newCall(request).enqueue(call);
 
-        return new JSONObject(call.response);
+        return call.response;
     }
 
     public String changePassword(String old_pass, String new_pass) {
+        String resp = "";
         String url = this.url + "user.getInfo?user_token=" + this.user_token
                 + "&old_password=" + old_pass
                 + "&password=" + new_pass;
 
         Callb call = new Callb();
-        Request request = new Request.Builder().url(url).get().build();
+        Request request = new Request.Builder()
+                .addHeader("User-Agent", "TiboxMobileApp")
+                .url(url).get().build();
         this.client.newCall(request).enqueue(call);
 
-        JSONObject data = new JSONObject(call.response);
-        data = (JSONObject) data.get("response");
-
-        return data.getString("time_token");
+        try{
+            JSONObject data = call.response;
+            resp = data.getString("time_token");
+        } catch (JSONException e) {
+//            Log.i("ERRORINFO_JSON", e.toString());
+            System.out.println("ERRORINFO_JSON: " + e.toString());
+        }
+        return resp;
     }
 
     public String changeLogin(String new_login) {
+        String resp = "";
         String url = this.url + "user.getInfo?user_token=" + this.user_token
                 + "&new_login=" + new_login;
 
         Callb call = new Callb();
-        Request request = new Request.Builder().url(url).get().build();
+        Request request = new Request.Builder()
+                .addHeader("User-Agent", "TiboxMobileApp")
+                .url(url).get().build();
         this.client.newCall(request).enqueue(call);
 
-        JSONObject data = new JSONObject(call.response);
-        data = (JSONObject) data.get("response");
-
-        return data.getString("time_token");
+        try{
+            JSONObject data = call.response;
+            resp = data.getString("time_token");
+        } catch (JSONException e) {
+//            Log.i("ERRORINFO_JSON", e.toString());
+            System.out.println("ERRORINFO_JSON: " + e.toString());
+        }
+        return resp;
     }
 
 
@@ -145,17 +191,17 @@ public class Api_connector {
             String url = this.url + "user.getInfo?user_token=" + this.user_token
                     + "&date=" + date;
         } else
-            if (Objects.equals(teacher, "")) {
+        if (Objects.equals(teacher, "")) {
             String url = this.url + "user.getInfo?user_token=" + this.user_token
                     + "&date=" + date
                     + "&id_lesson=" + lesson;
         } else
-            if (lesson == -1) {
+        if (lesson == -1) {
             String url = this.url + "user.getInfo?user_token=" + this.user_token
                     + "&date=" + date
                     + "&id_teacher=" + teacher;
         }
-            else {
+        else {
             String url = this.url + "user.getInfo?user_token=" + this.user_token
                     + "&date=" + date
                     + "&id_teacher=" + teacher
@@ -163,11 +209,18 @@ public class Api_connector {
         }
 
         Callb call = new Callb();
-        Request request = new Request.Builder().url(url).get().build();
+        Request request = new Request.Builder()
+                .addHeader("User-Agent", "TiboxMobileApp")
+                .url(url).get().build();
         this.client.newCall(request).enqueue(call);
 
-        JSONObject data = new JSONObject(call.response);
-        data = (JSONObject) data.get("response");
+        JSONObject data = new JSONObject();
+        try{
+            data = call.response;
+        } catch (Exception e) {
+//            Log.i("ERRORINFO_JSON", e.toString());
+            System.out.println("ERRORINFO_JSON: " + e.toString());
+        }
 
         return data;
     }
@@ -177,11 +230,18 @@ public class Api_connector {
                 + "&id_lesson=" + lesson;
 
         Callb call = new Callb();
-        Request request = new Request.Builder().url(url).get().build();
+        Request request = new Request.Builder()
+                .addHeader("User-Agent", "TiboxMobileApp")
+                .url(url).get().build();
         this.client.newCall(request).enqueue(call);
 
-        JSONObject data = new JSONObject(call.response);
-        data = (JSONObject) data.get("response");
+        JSONObject data = new JSONObject();
+        try{
+            data = call.response;
+        } catch (Exception e) {
+//            Log.i("ERRORINFO_JSON", e.toString());
+            System.out.println("ERRORINFO_JSON: " + e.toString());
+        }
 
         return data;
     }
@@ -191,46 +251,71 @@ public class Api_connector {
                 + "&id_teacher=" + teacher;
 
         Callb call = new Callb();
-        Request request = new Request.Builder().url(url).get().build();
+        Request request = new Request.Builder()
+                .addHeader("User-Agent", "TiboxMobileApp")
+                .url(url).get().build();
         this.client.newCall(request).enqueue(call);
 
-        JSONObject data = new JSONObject(call.response);
-        data = (JSONObject) data.get("response");
+        JSONObject data = new JSONObject();
+        try{
+            data = call.response;
+        } catch (Exception e) {
+//            Log.i("ERRORINFO_JSON", e.toString());
+            System.out.println("ERRORINFO_JSON: " + e.toString());
+        }
 
         return data;
     }
 
 
     /*-------------- GET METHODS --------------*/
-    public String get_auth_token(){
-        return this.auth_token;
+    public String get_user_token(){
+        return this.user_token;
     }
 }
 
 class Callb implements Callback {
     public boolean status;
-    public String response;
+    String resp;
+    public JSONObject response;
 
     @Override
     public void onFailure(Call call, IOException e) {
         this.status = false;
 //        Log.i("ERRORINFO_CALLBACK_CONNECTION", e.toString());
-        System.out.println(e.toString());
+        System.out.println("ERRORINFO_JSON: " + e.toString());
     }
 
     @Override
     public void onResponse(Call call, Response response) throws IOException {
-        try (ResponseBody responseBody = response.body()) {
-            if (!response.isSuccessful()) {
+        try {
+            if (!response.isSuccessful() && response.code()!=418) {
 //                Log.i("ERRORINFO_RESPONSE","Запрос к серверу не был успешен: " + response.code() + " " + response.message());
                 System.out.println("Запрос к серверу не был успешен: " + response.code() + " " + response.message());
                 this.status = false;
-                System.out.println(responseBody.string());
+                this.resp = response.body().string();
+                System.out.println(this.resp);
             } else {
-                this.response = responseBody.string();
-                JSONObject data = new JSONObject(this.response);
-                this.status = Boolean.parseBoolean((String) data.get("status"));
+                this.resp = response.body().string();
+                System.out.println("response: " + this.resp);
+                try{
+                    JSONObject data = new JSONObject(this.resp);
+
+                    String status1 = String.valueOf(data.get("status"));
+                    this.status = Boolean.parseBoolean(status1);
+
+                    data = (JSONObject) data.get("response");
+                    this.response = data;
+
+                    System.out.println(this.status);
+                    System.out.println(this.response);
+                } catch (JSONException e) {
+//                    Log.i("ERRORINFO_JSON", e.toString());
+                    System.out.println("ERRORINFO_JSON: " + e.toString());
+                }
             }
+        } catch (Exception e){
+            System.out.println("response error: " + e.toString());
         }
     }
 }

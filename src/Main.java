@@ -4,6 +4,6 @@ public class Main {
         String pass = "EgorKaras";
 
         Api_connector api_con = new Api_connector(login, pass);
-//        System.out.println(api_con.get_auth_token());
+        System.out.println(api_con.get_user_token());
     }
 }
